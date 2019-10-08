@@ -16,7 +16,7 @@ from html_snips import *
 from resp_header import get_header
 from my_zipper import create_zip
 
-home_dir = '/home/manthanby'
+home_dir = os.environ['HOME']
 times = 0
 serverPort = 12556          # serverPort for the server
 serverAddr = ('', serverPort)
