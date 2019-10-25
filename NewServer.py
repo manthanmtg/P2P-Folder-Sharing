@@ -35,6 +35,7 @@ response = bytes()      # reponse bytes object
 serverSocket.listen(5)
 prev_req_name = ''
 prev_req_time = -1000   # previous request time to handle duplicate requests
+prev_addr = 0
 while 1:
     logger.info('The server lsitening at ' + str(serverPort))
     connectionSocket, addr = serverSocket.accept()
@@ -44,16 +45,16 @@ while 1:
         continue
     req_name = (data.split('\n')[0]).split(' ')[1].strip()
     curr_req_time = time.time()
-    if(req_name == prev_req_name and (curr_req_time - prev_req_time) < 2):   # if the request is duplicate don't proceed
+    if(req_name == prev_req_name and str(addr[0]) == str(prev_addr) and (curr_req_time - prev_req_time) < 2):   # if the request is duplicate don't proceed
         connectionSocket.close()
         continue
     prev_req_name = req_name
     prev_req_time = curr_req_time
+    prev_addr = addr[0]
     logger.info("Connection Accepted: Client: " + str(addr))
     # use the below print statement to print the request ( for debugging )
     # print(data)
     
-    resp_data = html_start
     logger.info("Requested  File: " + str(req_name))
     # ? Check whether the request is to download
     if(req_name[-3:] == "get"):
@@ -86,16 +87,18 @@ while 1:
         # use the below print statement to print the statement ( for debugging )
         # print(response)
         connectionSocket.send(response)
-        logger.info("Request successfully served: Resposne Sent with the requested file atatched")
+        logger.info("Request successfully served: Response Sent with the requested file atatched")
         connectionSocket.close()
         logger.info("Connection Closed: Connection with client " + str(addr) + " closed")
         continue    # after no point in moving forward :)
     curr_req_name = home_dir + req_name
     # ? Check whether the request is to list the contents of the directory
     if(os.path.isdir(curr_req_name)):
+        resp_data = html_start
         resp_data += """<div class="container"><div class="page-header"><h1> Here are the list of files </h1></div>"""
         resp_data += """<table class="table">"""
         resp_data += """<thead class="thead-dark"><tr><th scope="col">File/Dir</th><th scope="col">Action</th></tr></thead><tbody>"""
+        resp_data += html_end
         for content in os.listdir(curr_req_name):
             curr_full_path = curr_req_name.rstrip('/') + '/' + content
             # for debugging
@@ -106,8 +109,12 @@ while 1:
             #else:
             # resp_data += "<li>" + """<a href = "{}">""".format(curr_full_path.replace("/home/manthanby", "", 1)) +  content + """</a>""" + """ Download """ +  """<a href="{}get" target="_blank">""".format(curr_full_path.replace("/home/manthanby", "", 1)) + """GET</a>""" + "</li>"
         resp_data += "</tbody></table></div>"        
-
-    resp_data += html_end
+    if(os.path.isfile(curr_req_name)):
+            with open(curr_req_name, 'r') as f:
+                try:
+                    resp_data = f.read()
+                except:
+                    resp_data = "Can't read the file: Please download using GET"
     response = get_header(200).encode() + bytes(resp_data, 'utf-8')
     connectionSocket.send(response)
     logger.info("Request successfully served: Resposne Sent with the requested file atatched")
