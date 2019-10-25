@@ -17,6 +17,7 @@ def get_header(status_no, type = 'default', mime_type = '', content_length = 0, 
         header += 'Content-Type: ' + mime_type + '\n'
         header += 'Content-Length: ' + str(content_length) + '\n'
         header += 'Connection: close\n\n'
+        print(file_name)
         
         
     if(status_no == 404):

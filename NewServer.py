@@ -17,6 +17,7 @@ from html_snips import *
 from resp_header import get_header
 from my_zipper import create_zip
 import logging
+import urllib.parse
 
 logging.basicConfig(filename="server.log", 
                     format='%(asctime)s %(message)s', 
@@ -24,7 +25,8 @@ logging.basicConfig(filename="server.log",
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG) 
 
-home_dir = os.environ['HOME']
+# home_dir = os.environ['HOME']
+home_dir = "/mnt/m"
 times = 0
 serverPort = 12556          # serverPort for the server
 serverAddr = ('', serverPort)
@@ -55,10 +57,10 @@ while 1:
     # use the below print statement to print the request ( for debugging )
     # print(data)
     
-    logger.info("Requested  File: " + str(req_name))
+    logger.info("Requested  File: " + urllib.parse.unquote(req_name))
     # ? Check whether the request is to download
     if(req_name[-3:] == "get"):
-        file_path = home_dir + req_name[:-3]
+        file_path = home_dir + urllib.parse.unquote(req_name[:-3])
         # print file path ( for debugging )
         # print("file Path: ", file_path)
         mime = MimeTypes()
@@ -67,22 +69,22 @@ while 1:
             mime_type = 'text/plain'
         # ? Check whether the request is directory
         if(os.path.isdir(file_path)):
-            create_zip(req_name[1:-3], file_path)
+            create_zip(file_path.split('/')[-1], file_path)
             data = ''
-            with open(req_name[1:-3] + '.zip', 'rb') as f:
+            with open(file_path.split('/')[-1] + '.zip', 'rb') as f:
                 data = f.read()     # reading the file in the binary format
-            zip_path = os.getcwd() + '/' + req_name[1:-3] + ".zip"
+            zip_path = os.getcwd() + '/' + file_path.split('/')[-1] + ".zip"
             mime_type = mime.guess_type(zip_path)[0]
             if(mime_type == None):
                 mime_type = 'text/plain'
-            response = get_header(200, 'download', mime_type, os.path.getsize(zip_path), req_name[1:-3] + ".zip").encode()
+            response = get_header(200, 'download', mime_type, os.path.getsize(zip_path), file_path.split('/')[-1] + ".zip").encode()
             response += data    # attaching the binary format of the text to the http response
             os.remove(zip_path)
         # ? Else it's not a direcrory, it's a file :)
         else:
             with open(file_path, "rb") as f:
                 data = f.read()     # reading the file in the binary format
-                response = get_header(200, 'download', mime_type, os.path.getsize(file_path), req_name[1:-3]).encode()
+                response = get_header(200, 'download', mime_type, os.path.getsize(file_path), file_path.split('/')[-1]).encode()
                 response += data    # attaching the binary format of the text to the http response
         # use the below print statement to print the statement ( for debugging )
         # print(response)
@@ -91,7 +93,7 @@ while 1:
         connectionSocket.close()
         logger.info("Connection Closed: Connection with client " + str(addr) + " closed")
         continue    # after no point in moving forward :)
-    curr_req_name = home_dir + req_name
+    curr_req_name = home_dir + urllib.parse.unquote(req_name)
     # ? Check whether the request is to list the contents of the directory
     if(os.path.isdir(curr_req_name)):
         resp_data = html_start
