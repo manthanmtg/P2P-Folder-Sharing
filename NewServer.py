@@ -30,8 +30,8 @@ home_dir = "/mnt/m"
 times = 0
 serverPort = 12556          # serverPort for the server
 serverAddr = ('', serverPort)
-serverSocket = socket(AF_INET, SOCK_STREAM)
-serverSocket.bind(serverAddr)
+serverSocket = socket(AF_INET, SOCK_STREAM) # Using ipv4 addressing and TCP stream
+serverSocket.bind(serverAddr)   # binding the address to the socket
 
 response = bytes()      # reponse bytes object
 serverSocket.listen(5)
